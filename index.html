@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
+    <title>점검중 · 이메일 확인</title>
+    <style>
+      :root {
+        --bg: #eef2f6;
+        --bg-glow: #d9e7f2;
+        --card: #ffffff;
+        --ink: #16202a;
+        --muted: #5f7183;
+        --line: #e3e9ef;
+        --brand: #1f6feb;
+        --brand-soft: #e8f1fe;
+        --ok: #12855f;
+        --ok-soft: #e3f5ee;
+        --warn: #c2410c;
+        --warn-soft: #fdeee5;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f151b;
+          --bg-glow: #16232e;
+          --card: #171f27;
+          --ink: #eaf0f6;
+          --muted: #9aabbb;
+          --line: #26313c;
+          --brand: #5ea0ff;
+          --brand-soft: #1b2836;
+          --ok: #4ade9f;
+          --ok-soft: #142b23;
+          --warn: #fb923c;
+          --warn-soft: #2c1d14;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+        font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+          "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(70% 44% at 50% 0%, var(--bg-glow) 0%, transparent 70%),
+          var(--bg);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 400px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 40px 28px 24px;
+        text-align: center;
+        box-shadow:
+          0 1px 2px rgba(16, 32, 48, 0.04),
+          0 18px 44px -18px rgba(16, 32, 48, 0.22);
+        animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+      }
+
+      .badge {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 22px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+
+      .badge svg {
+        width: 38px;
+        height: 38px;
+      }
+
+      .badge svg path,
+      .badge svg circle {
+        stroke-dasharray: 60;
+        stroke-dashoffset: 60;
+        animation: draw 0.55s 0.15s ease-out forwards;
+      }
+
+      @keyframes draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 23px;
+        line-height: 1.42;
+        font-weight: 700;
+        letter-spacing: -0.4px;
+        word-break: keep-all;
+      }
+
+      .lead {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.68;
+        color: var(--muted);
+        word-break: keep-all;
+      }
+
+      .lead strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .note {
+        margin: 22px 0 0;
+        padding: 13px 16px;
+        border-radius: 13px;
+        background: var(--brand-soft);
+        color: var(--brand);
+        font-size: 13.5px;
+        line-height: 1.6;
+        font-weight: 500;
+        word-break: keep-all;
+      }
+
+      footer {
+        margin-top: 26px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        font-size: 12.5px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .brand {
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -0.2px;
+      }
+
+      footer a {
+        color: inherit;
+      }
+
+      body[data-state="error"] .badge {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+
+      body[data-state="error"] .note {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+
+      .detail {
+        margin: 14px 0 0;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted);
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body data-state="ok">
+    <main class="card">
+      <div class="badge" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path id="mark" d="M14 24.5 L21 31.5 L34 17.5" />
+        </svg>
+      </div>
+
+      <h1 id="title">이메일 확인이 완료되었습니다</h1>
+
+      <p class="lead" id="lead">
+        계정이 정상적으로 인증되었습니다.<br />
+        <strong>점검중</strong> 앱으로 돌아가 로그인해 주세요.
+      </p>
+
+      <p class="note" id="note">이 창은 닫으셔도 됩니다.</p>
+
+      <p class="detail" id="detail" hidden></p>
+
+      <footer>
+        <div class="brand">점검중</div>
+        <div>서울 지하철 승강기 고장 알림</div>
+        <div><a href="mailto:lab.sustainable2024@gmail.com">lab.sustainable2024@gmail.com</a></div>
+      </footer>
+    </main>
+
+    <script>
+      (function () {
+        var params = new URLSearchParams(
+          window.location.search + "&" + window.location.hash.replace(/^#/, "")
+        );
+        var code = params.get("error_code") || params.get("error");
+        if (!code) return;
+
+        var expired = /expired|invalid/i.test(
+          code + " " + (params.get("error_description") || "")
+        );
+
+        document.body.dataset.state = "error";
+        document.getElementById("mark").setAttribute(
+          "d",
+          "M24 13 L24 27 M24 34.5 L24 35"
+        );
+        document.getElementById("title").textContent = expired
+          ? "링크가 만료되었습니다"
+          : "이메일 확인에 실패했습니다";
+        document.getElementById("lead").innerHTML = expired
+          ? "이 링크는 이미 사용되었거나 유효 기간이 지났습니다.<br /><strong>점검중</strong> 앱에서 인증 메일을 다시 받아 주세요."
+          : "잠시 후 다시 시도해 주세요.<br />문제가 계속되면 아래 메일로 알려 주세요.";
+        document.getElementById("note").textContent =
+          "이미 인증을 마친 계정이라면 앱에서 바로 로그인할 수 있습니다.";
+
+        var description = params.get("error_description");
+        if (description) {
+          var detail = document.getElementById("detail");
+          detail.textContent = "오류: " + description;
+          detail.hidden = false;
+        }
+      })();
+    </script>
+  </body>
+</html>
