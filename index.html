@@ -184,6 +184,47 @@
         color: var(--muted);
         word-break: break-word;
       }
+
+      .reset-form {
+        margin-top: 22px;
+        display: grid;
+        gap: 10px;
+        text-align: left;
+      }
+
+      .reset-form label {
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .reset-form input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 13px 14px;
+        background: var(--card);
+        color: var(--ink);
+        font: inherit;
+        font-size: 15px;
+      }
+
+      .reset-form button {
+        margin-top: 4px;
+        border: 0;
+        border-radius: 12px;
+        padding: 13px 16px;
+        background: var(--brand);
+        color: #fff;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .reset-form button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
     </style>
   </head>
   <body data-state="ok">
@@ -206,6 +247,30 @@
 
       <p class="detail" id="detail" hidden></p>
 
+      <form class="reset-form" id="reset-form" hidden>
+        <label for="password">새 비밀번호</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          minlength="8"
+          autocomplete="new-password"
+          placeholder="8자 이상"
+          required
+        />
+        <label for="password-confirm">새 비밀번호 확인</label>
+        <input
+          id="password-confirm"
+          name="password-confirm"
+          type="password"
+          minlength="8"
+          autocomplete="new-password"
+          placeholder="한 번 더 입력"
+          required
+        />
+        <button id="reset-button" type="submit">비밀번호 변경</button>
+      </form>
+
       <footer>
         <div class="brand">점검중</div>
         <div>서울 지하철 승강기 고장 알림</div>
@@ -218,7 +283,84 @@
         var params = new URLSearchParams(
           window.location.search + "&" + window.location.hash.replace(/^#/, "")
         );
+        var type = params.get("type");
+        var accessToken = params.get("access_token");
         var code = params.get("error_code") || params.get("error");
+        if (type === "recovery" && accessToken && !code) {
+          document.title = "점검중 · 비밀번호 재설정";
+          document.getElementById("title").textContent =
+            "새 비밀번호를 설정해 주세요";
+          document.getElementById("lead").innerHTML =
+            "본인 확인이 완료되었습니다.<br /><strong>8자 이상</strong>의 새 비밀번호를 입력해 주세요.";
+          document.getElementById("note").textContent =
+            "변경 후 점검중 앱에서 새 비밀번호로 로그인할 수 있습니다.";
+
+          var form = document.getElementById("reset-form");
+          var button = document.getElementById("reset-button");
+          form.hidden = false;
+          form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            var password = document.getElementById("password").value;
+            var confirm = document.getElementById("password-confirm").value;
+            var detail = document.getElementById("detail");
+            detail.hidden = false;
+
+            if (password.length < 8) {
+              detail.textContent = "비밀번호는 8자 이상이어야 합니다.";
+              return;
+            }
+            if (password !== confirm) {
+              detail.textContent = "비밀번호 확인이 일치하지 않습니다.";
+              return;
+            }
+
+            button.disabled = true;
+            button.textContent = "변경 중...";
+            detail.textContent = "";
+
+            try {
+              var response = await fetch(
+                "https://gxzsbdhnuarkwewuxwli.supabase.co/functions/v1/complete-password-reset",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + accessToken,
+                  },
+                  body: JSON.stringify({ password: password }),
+                }
+              );
+              var payload = await response.json().catch(function () {
+                return {};
+              });
+              if (!response.ok) {
+                throw new Error(
+                  payload.error || "비밀번호 변경에 실패했습니다."
+                );
+              }
+
+              form.hidden = true;
+              document.getElementById("title").textContent =
+                "비밀번호가 변경되었습니다";
+              document.getElementById("lead").innerHTML =
+                "<strong>점검중</strong> 앱으로 돌아가 새 비밀번호로 로그인해 주세요.";
+              document.getElementById("note").textContent =
+                "보안을 위해 다른 기기의 기존 로그인은 해제될 수 있습니다.";
+              detail.hidden = true;
+              window.history.replaceState({}, "", window.location.pathname);
+            } catch (error) {
+              detail.textContent =
+                error && error.message
+                  ? error.message
+                  : "비밀번호 변경에 실패했습니다.";
+            } finally {
+              button.disabled = false;
+              button.textContent = "비밀번호 변경";
+            }
+          });
+          return;
+        }
+
         if (!code) return;
 
         var expired = /expired|invalid/i.test(
