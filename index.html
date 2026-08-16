@@ -278,92 +278,93 @@
       </footer>
     </main>
 
-    <script>
-      (function () {
-        var params = new URLSearchParams(
-          window.location.search + "&" + window.location.hash.replace(/^#/, "")
-        );
-        var type = params.get("type");
-        var accessToken = params.get("access_token");
-        var code = params.get("error_code") || params.get("error");
-        if (type === "recovery" && accessToken && !code) {
-          document.title = "점검중 · 비밀번호 재설정";
-          document.getElementById("title").textContent =
-            "새 비밀번호를 설정해 주세요";
-          document.getElementById("lead").innerHTML =
-            "본인 확인이 완료되었습니다.<br /><strong>8자 이상</strong>의 새 비밀번호를 입력해 주세요.";
-          document.getElementById("note").textContent =
-            "변경 후 점검중 앱에서 새 비밀번호로 로그인할 수 있습니다.";
+    <script type="module">
+      import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-          var form = document.getElementById("reset-form");
-          var button = document.getElementById("reset-button");
-          form.hidden = false;
-          form.addEventListener("submit", async function (event) {
-            event.preventDefault();
-            var password = document.getElementById("password").value;
-            var confirm = document.getElementById("password-confirm").value;
-            var detail = document.getElementById("detail");
-            detail.hidden = false;
+      const SUPABASE_URL = "https://gxzsbdhnuarkwewuxwli.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4enNiZGhudWFya3dld3V4d2xpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0MDU1NzYsImV4cCI6MjA5OTk4MTU3Nn0.YNp46zn6pNjnhbLVQ1I4N3DANfJ6uTGvk9qqJHJfCIU";
 
-            if (password.length < 8) {
-              detail.textContent = "비밀번호는 8자 이상이어야 합니다.";
-              return;
+      const params = new URLSearchParams(
+        window.location.search + "&" + window.location.hash.replace(/^#/, "")
+      );
+      const type = params.get("type");
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+      const code = params.get("error_code") || params.get("error");
+
+      if (type === "recovery" && accessToken && !code) {
+        document.title = "점검중 · 비밀번호 재설정";
+        document.getElementById("title").textContent =
+          "새 비밀번호를 설정해 주세요";
+        document.getElementById("lead").innerHTML =
+          "본인 확인이 완료되었습니다.<br /><strong>8자 이상</strong>의 새 비밀번호를 입력해 주세요.";
+        document.getElementById("note").textContent =
+          "변경 후 점검중 앱에서 새 비밀번호로 로그인할 수 있습니다.";
+
+        const form = document.getElementById("reset-form");
+        const button = document.getElementById("reset-button");
+        form.hidden = false;
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const password = document.getElementById("password").value;
+          const confirm = document.getElementById("password-confirm").value;
+          const detail = document.getElementById("detail");
+          detail.hidden = false;
+
+          if (password.length < 8) {
+            detail.textContent = "비밀번호는 8자 이상이어야 합니다.";
+            return;
+          }
+          if (password !== confirm) {
+            detail.textContent = "비밀번호 확인이 일치하지 않습니다.";
+            return;
+          }
+
+          button.disabled = true;
+          button.textContent = "변경 중...";
+          detail.textContent = "";
+
+          try {
+            const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false },
+            });
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || "",
+            });
+            if (sessionError) {
+              throw new Error("링크가 만료되었거나 이미 사용되었습니다.");
             }
-            if (password !== confirm) {
-              detail.textContent = "비밀번호 확인이 일치하지 않습니다.";
-              return;
+
+            const { error } = await supabase.auth.updateUser({ password });
+            if (error) {
+              throw new Error(error.message || "비밀번호 변경에 실패했습니다.");
             }
 
-            button.disabled = true;
-            button.textContent = "변경 중...";
-            detail.textContent = "";
+            await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
 
-            try {
-              var response = await fetch(
-                "https://gxzsbdhnuarkwewuxwli.supabase.co/functions/v1/complete-password-reset",
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + accessToken,
-                  },
-                  body: JSON.stringify({ password: password }),
-                }
-              );
-              var payload = await response.json().catch(function () {
-                return {};
-              });
-              if (!response.ok) {
-                throw new Error(
-                  payload.error || "비밀번호 변경에 실패했습니다."
-                );
-              }
-
-              form.hidden = true;
-              document.getElementById("title").textContent =
-                "비밀번호가 변경되었습니다";
-              document.getElementById("lead").innerHTML =
-                "<strong>점검중</strong> 앱으로 돌아가 새 비밀번호로 로그인해 주세요.";
-              document.getElementById("note").textContent =
-                "보안을 위해 다른 기기의 기존 로그인은 해제될 수 있습니다.";
-              detail.hidden = true;
-              window.history.replaceState({}, "", window.location.pathname);
-            } catch (error) {
-              detail.textContent =
-                error && error.message
-                  ? error.message
-                  : "비밀번호 변경에 실패했습니다.";
-            } finally {
-              button.disabled = false;
-              button.textContent = "비밀번호 변경";
-            }
-          });
-          return;
-        }
-
-        if (!code) return;
-
-        var expired = /expired|invalid/i.test(
+            form.hidden = true;
+            document.getElementById("title").textContent =
+              "비밀번호가 변경되었습니다";
+            document.getElementById("lead").innerHTML =
+              "<strong>점검중</strong> 앱으로 돌아가 새 비밀번호로 로그인해 주세요.";
+            document.getElementById("note").textContent =
+              "보안을 위해 다른 기기의 기존 로그인은 해제될 수 있습니다.";
+            detail.hidden = true;
+            window.history.replaceState({}, "", window.location.pathname);
+          } catch (error) {
+            detail.textContent =
+              error && error.message
+                ? error.message
+                : "비밀번호 변경에 실패했습니다.";
+          } finally {
+            button.disabled = false;
+            button.textContent = "비밀번호 변경";
+          }
+        });
+      } else if (code) {
+        const expired = /expired|invalid/i.test(
           code + " " + (params.get("error_description") || "")
         );
 
@@ -381,13 +382,13 @@
         document.getElementById("note").textContent =
           "이미 인증을 마친 계정이라면 앱에서 바로 로그인할 수 있습니다.";
 
-        var description = params.get("error_description");
+        const description = params.get("error_description");
         if (description) {
-          var detail = document.getElementById("detail");
+          const detail = document.getElementById("detail");
           detail.textContent = "오류: " + description;
           detail.hidden = false;
         }
-      })();
+      }
     </script>
   </body>
 </html>
